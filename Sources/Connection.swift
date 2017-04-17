@@ -70,7 +70,7 @@ public class Connection {
 		apn_set_mode(context, mode.libraryValue) // APN_MODE_PRODUCTION
 		apn_set_behavior(context, UInt32(2)) // 1 << 1, APN_OPTION_RECONNECT
 		apn_set_certificate(context, "apn-cert.pem", "apn-key.pem", nil)
-		apn_set_log_level(context, UInt16(4));
+		apn_set_log_level(context, UInt16(0));
 		apn_set_log_callback(context, {
 			(level, message, length) in
 			let str = String(cString: message!)
