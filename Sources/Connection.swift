@@ -3,7 +3,7 @@ import Glibc
 import Foundation
 
 func logCallback(level: __apn_log_levels, message: String, length: UInt32) {
-	print("Received a message: \(message)")
+	print("[SwiftAPNS] Received a message: \(message)")
 }
 
 public enum ConnectionMode: Int {
@@ -17,11 +17,11 @@ case production = 0
 	}
 }
 
-class Connection {
+public class Connection {
 	let context: OpaquePointer
 	let mode: ConnectionMode
 
-	init?(mode: ConnectionMode = .sandbox) {
+	public init?(mode: ConnectionMode = .sandbox) {
 		guard apn_library_init() == APN_SUCCESS else {
 			print("[\(type(of: self))] Unable to load APN library")
 			return nil

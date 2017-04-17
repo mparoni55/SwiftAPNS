@@ -17,11 +17,11 @@ extension Data {
 	}
 }
 
-class Payload {
+public class Payload {
 	let context: OpaquePointer
 	let token: String
 
-	init?(badge: Int, body: String, deviceToken: Data, expiration: Int = 3600) {
+	public init?(badge: Int, body: String, deviceToken: Data, expiration: Int = 3600) {
 		guard let ctx = apn_payload_init() else {
 			return nil
 		}
