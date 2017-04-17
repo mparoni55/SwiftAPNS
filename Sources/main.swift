@@ -10,7 +10,7 @@ let token = "0vahCTdPHr3iPKuKrgB3Tyqzjw3EBc57jIXqEacJ22M="
 let data = Data(base64Encoded: token)!
 
 let payload = Payload(badge: 15, body: "This is a test message, you tramp!", deviceToken: data)
-connection!.send(payload)
+try? connection!.send(payload)
 
 
 
