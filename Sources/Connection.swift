@@ -21,7 +21,7 @@ public class Connection {
 	let context: OpaquePointer
 	let mode: ConnectionMode
 
-	public init?(mode: ConnectionMode = .sandbox) {
+	public init?(mode: ConnectionMode = .sandbox) throws{
 		guard apn_library_init() == APN_SUCCESS else {
 			print("[\(type(of: self))] Unable to load APN library")
 			return nil
