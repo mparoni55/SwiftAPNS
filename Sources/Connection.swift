@@ -6,9 +6,14 @@ func logCallback(level: __apn_log_levels, message: String, length: UInt32) {
 	print("[SwiftAPNS] Received a message: \(message)")
 }
 
+public enum SwiftAPNSError: Error {
+  case swiftAPNSError(reason: String)
+  
+}
+
 public enum ConnectionMode: Int {
-case sandbox    = 1
-case production = 0
+	case sandbox    = 1
+	case production = 0
 	var libraryValue: apn_connection_mode {
 		if self == .sandbox {
 			return APN_MODE_SANDBOX
@@ -21,22 +26,20 @@ public class Connection {
 	let context: OpaquePointer
 	let mode: ConnectionMode
 
-	public init?(mode: ConnectionMode = .sandbox) throws{
-		guard apn_library_init() == APN_SUCCESS else {
-			print("[\(type(of: self))] Unable to load APN library")
-			return nil
+	public init(mode: ConnectionMode = .sandbox) throws{
+		guard apn_library_init() == APN_SUCCESS else { 
+			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Unable to load APN library")
 		}
 		guard let ctx = apn_init() else {
-			print("[\(type(of: self))] Unable to initialize a connection context for APN")
-			return nil
+			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Unable to initialize a connection context for APN")
 		}
 		context = ctx
 		self.mode = mode
 
-		configure()
-		guard connect() == true else {
-			return nil
-		}
+//		configure()
+//		guard try connect() == true else {
+//			throw SwiftAPNSError.swiftAPNSError(reason: "SwiftAPNS Connect Failed")
+//		}
 	}
 
 	deinit {
@@ -66,7 +69,7 @@ public class Connection {
 		apn_array_free(tokens)
 	}
 
-	private func configure() {
+	public func configure() {
 		apn_set_mode(context, mode.libraryValue) // APN_MODE_PRODUCTION
 		apn_set_behavior(context, UInt32(2)) // 1 << 1, APN_OPTION_RECONNECT
 		apn_set_certificate(context, "apn-cert.pem", "apn-key.pem", nil)
@@ -78,11 +81,10 @@ public class Connection {
 		});
 	}
 
-	private func connect() -> Bool {
+	public func connect() throws -> Bool {
 		if APN_ERROR == apn_connect(context) {
 			let errorString = String(cString: apn_error_string(errno))
-			print("[\(type(of: self))] Unable to connect to Apple push services: \(errorString)")
-			return false
+			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Unable to connect to Apple push services: \(errorString)")
 		}
 		return true
 	}
