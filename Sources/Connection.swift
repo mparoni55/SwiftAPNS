@@ -20,6 +20,11 @@ public struct APNSLogLevel: OptionSet {   //OptionSet
 	public static let APNSLogLevelError = APNSLogLevel(rawValue: 0b010)
 	public static let APNSLogLevelDebug = APNSLogLevel(rawValue: 0b100)
 
+	// https://stackoverflow.com/a/41311820/1433825
+	public static func | (leftSide: APNSLogLevel, rightSide: APNSLogLevel) -> APNSLogLevel {
+      return APNSLogLevel(rawValue: leftSide.rawValue | rightSide.rawValue)
+   }
+
 }
 
 public enum ConnectionMode: Int {
@@ -34,6 +39,7 @@ public enum ConnectionMode: Int {
 }
 
 public class APNS {
+
 	let context: OpaquePointer
 	let mode: ConnectionMode
 
@@ -83,7 +89,7 @@ public class APNS {
 		apn_array_free(tokens)
 	}
 
-	public func configure() throws{
+	private func configure() throws{
 		guard let pemAPNCertFileLocation = self.pemAPNCertFileLocation else {
 			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Must specify pemAPNCertFileLocation") 
 		}
@@ -96,28 +102,29 @@ public class APNS {
 		apn_set_certificate(context, pemAPNCertFileLocation, pemAPNCertKeyFileLocation, nil)
 //		apn_set_certificate(context, "apn-cert.pem", "apn-key.pem", nil)
 //		apn_set_log_level(context, UInt16(0));
-//		apn_set_log_callback(context, {
-//			(level, message, length) in
-//			let str = String(cString: message!)
-//			print("Received log data: \(str)")
-//		});
+		apn_set_log_callback(context, {
+			(level, message, length) in
+			let str = String(cString: message!)
+			//print("Received log data [\(Unmanaged.passUnretained(self).toOpaque())]: \(str)")
+			if let logHandler = APNS.logHandler {
+				logHandler(APNSLogLevel(rawValue:level.rawValue), str)
+			}
+		});
 	}
 
 	public func setLogLevel(_ level:APNSLogLevel){
 		apn_set_log_level(context, UInt16(level.rawValue));
 	}
 
-	public func setLogHandler(_ handler: @escaping (APNSLogLevel, String)->()){ //
-		//self.logHandler = handler
-		apn_set_log_callback(context, {
-			(level, message, length) in
-			let str = String(cString: message!)
-			print("Received log data: \(str)")
-			//handler(APNSLogLevel(rawValue:level.rawValue), str)
-		});
+	static private var logHandler : ((APNSLogLevel, String)->())?  // this needs to be static because it gets passed to the c lib as a handler
+
+	static public func setLogHandler(_ handler: @escaping (APNSLogLevel, String)->()){ //
+		APNS.logHandler = handler
+
 	}
 
 	public func connect() throws -> Bool {
+		try configure()
 		if APN_ERROR == apn_connect(context) {
 			let errorString = String(cString: apn_error_string(errno))
 			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Unable to connect to Apple push services: \(errorString)")
