@@ -22,7 +22,7 @@ public enum ConnectionMode: Int {
 	}
 }
 
-public class Connection {
+public class APNS {
 	let context: OpaquePointer
 	let mode: ConnectionMode
 
@@ -47,7 +47,7 @@ public class Connection {
 		apn_library_free()
 	}
 
-	public func send(_ payload: Payload?) throws {
+	public func send(_ payload: APNSPayload?) throws {
 		guard let payload = payload else { return }
 		guard let tokens = apn_array_init(1, nil, nil) else { return }
 		var rawList = [UInt8](payload.token.utf8)

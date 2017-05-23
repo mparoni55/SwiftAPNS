@@ -17,7 +17,7 @@ extension Data {
 	}
 }
 
-public class Payload {
+public class APNSPayload {
 	let context: OpaquePointer
 	let token: String
 
