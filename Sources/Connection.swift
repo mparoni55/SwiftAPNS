@@ -11,6 +11,17 @@ public enum SwiftAPNSError: Error {
   
 }
 
+public struct APNSLogLevel: OptionSet {   //OptionSet
+	public let rawValue: UInt32
+	public init(rawValue:UInt32){self.rawValue = rawValue}
+
+	public static let APNSLogLevelNone = APNSLogLevel(rawValue: 0b000)
+	public static let APNSLogLevelInfo = APNSLogLevel(rawValue: 0b001)
+	public static let APNSLogLevelError = APNSLogLevel(rawValue: 0b010)
+	public static let APNSLogLevelDebug = APNSLogLevel(rawValue: 0b100)
+
+}
+
 public enum ConnectionMode: Int {
 	case sandbox    = 1
 	case production = 0
@@ -26,6 +37,9 @@ public class APNS {
 	let context: OpaquePointer
 	let mode: ConnectionMode
 
+	var pemAPNCertFileLocation : String?
+	var pemAPNCertKeyFileLocation : String?
+	
 	public init(mode: ConnectionMode = .sandbox) throws{
 		guard apn_library_init() == APN_SUCCESS else { 
 			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Unable to load APN library")
@@ -69,15 +83,37 @@ public class APNS {
 		apn_array_free(tokens)
 	}
 
-	public func configure() {
+	public func configure() throws{
+		guard let pemAPNCertFileLocation = self.pemAPNCertFileLocation else {
+			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Must specify pemAPNCertFileLocation") 
+		}
+		guard let pemAPNCertKeyFileLocation = self.pemAPNCertKeyFileLocation else {
+			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Must specify pemAPNCertKeyFileLocation")
+		}
+
 		apn_set_mode(context, mode.libraryValue) // APN_MODE_PRODUCTION
 		apn_set_behavior(context, UInt32(2)) // 1 << 1, APN_OPTION_RECONNECT
-		apn_set_certificate(context, "apn-cert.pem", "apn-key.pem", nil)
-		apn_set_log_level(context, UInt16(0));
+		apn_set_certificate(context, pemAPNCertFileLocation, pemAPNCertKeyFileLocation, nil)
+//		apn_set_certificate(context, "apn-cert.pem", "apn-key.pem", nil)
+//		apn_set_log_level(context, UInt16(0));
+//		apn_set_log_callback(context, {
+//			(level, message, length) in
+//			let str = String(cString: message!)
+//			print("Received log data: \(str)")
+//		});
+	}
+
+	public func setLogLevel(_ level:APNSLogLevel){
+		apn_set_log_level(context, UInt16(level.rawValue));
+	}
+
+	public func setLogHandler(_ handler: @escaping (APNSLogLevel, String)->()){ //
+		//self.logHandler = handler
 		apn_set_log_callback(context, {
 			(level, message, length) in
 			let str = String(cString: message!)
 			print("Received log data: \(str)")
+			//handler(APNSLogLevel(rawValue:level.rawValue), str)
 		});
 	}
 
