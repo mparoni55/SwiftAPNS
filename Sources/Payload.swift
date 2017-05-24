@@ -17,16 +17,23 @@ extension Data {
 	}
 }
 
-public class Payload {
+public class APNSPayload {
 	let context: OpaquePointer
 	let token: String
 
-	public init?(badge: Int, body: String, deviceToken: Data, expiration: Int = 3600) {
+	convenience public init?(badge: Int, body: String, deviceToken: Data, expiration: Int = 3600) {
+		
+		
+		self.init(badge: badge, body: body, deviceToken: deviceToken.hexadecimalString(), expiration: expiration)
+
+	}
+
+	public init?(badge: Int, body: String, deviceToken: String, expiration: Int = 3600){
 		guard let ctx = apn_payload_init() else {
 			return nil
 		}
 		context = ctx
-		token = deviceToken.hexadecimalString()
+		token = deviceToken
 
 		let timestamp = Int(Date().timeIntervalSince1970) + expiration
 
