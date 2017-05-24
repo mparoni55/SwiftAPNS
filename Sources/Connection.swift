@@ -43,8 +43,9 @@ public class APNS {
 	let context: OpaquePointer
 	let mode: ConnectionMode
 
-	var pemAPNCertFileLocation : String?
-	var pemAPNCertKeyFileLocation : String?
+	public var pemAPNCertFileLocation : String?
+	public var pemAPNCertKeyFileLocation : String?
+	public var pemAPNCertKeyPassword : String?
 	
 	public init(mode: ConnectionMode = .sandbox) throws{
 		guard apn_library_init() == APN_SUCCESS else { 
@@ -99,7 +100,7 @@ public class APNS {
 
 		apn_set_mode(context, mode.libraryValue) // APN_MODE_PRODUCTION
 		apn_set_behavior(context, UInt32(2)) // 1 << 1, APN_OPTION_RECONNECT
-		apn_set_certificate(context, pemAPNCertFileLocation, pemAPNCertKeyFileLocation, nil)
+		apn_set_certificate(context, pemAPNCertFileLocation, pemAPNCertKeyFileLocation, pemAPNCertKeyPassword)//
 //		apn_set_certificate(context, "apn-cert.pem", "apn-key.pem", nil)
 //		apn_set_log_level(context, UInt16(0));
 		apn_set_log_callback(context, {
