@@ -15,10 +15,10 @@ public struct APNSLogLevel: OptionSet {   //OptionSet
 	public let rawValue: UInt32
 	public init(rawValue:UInt32){self.rawValue = rawValue}
 
-	public static let APNSLogLevelNone = APNSLogLevel(rawValue: 0b000)
-	public static let APNSLogLevelInfo = APNSLogLevel(rawValue: 0b001)
-	public static let APNSLogLevelError = APNSLogLevel(rawValue: 0b010)
-	public static let APNSLogLevelDebug = APNSLogLevel(rawValue: 0b100)
+	public static let APNSLogLevelNone = APNSLogLevel(rawValue: 0)			//0b000
+	public static let APNSLogLevelInfo = APNSLogLevel(rawValue: 1 << 0)		//0b001
+	public static let APNSLogLevelError = APNSLogLevel(rawValue: 1 << 1)	//0b010
+	public static let APNSLogLevelDebug = APNSLogLevel(rawValue: 1 << 2)	//0b100
 
 	// https://stackoverflow.com/a/41311820/1433825
 	public static func | (leftSide: APNSLogLevel, rightSide: APNSLogLevel) -> APNSLogLevel {
@@ -43,9 +43,11 @@ public class APNS {
 	let context: OpaquePointer
 	let mode: ConnectionMode
 
-	public var pemAPNCertFileLocation : String?
-	public var pemAPNCertKeyFileLocation : String?
-	public var pemAPNCertKeyPassword : String?
+
+	public var certAndKeyPEMFileLocation : String?
+	public var certPEMFileLocation : String?
+	public var certKeyPEMFileLocation : String?
+	public var certKeyPassword : String?
 	
 	public init(mode: ConnectionMode = .sandbox) throws{
 		guard apn_library_init() == APN_SUCCESS else { 
@@ -91,16 +93,17 @@ public class APNS {
 	}
 
 	private func configure() throws{
-		guard let pemAPNCertFileLocation = self.pemAPNCertFileLocation else {
-			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Must specify pemAPNCertFileLocation") 
+
+		guard certPEMFileLocation != nil || certAndKeyPEMFileLocation != nil  else {
+			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Must specify certPEMFileLocation or certAndKeyPEMFileLocation") 
 		}
-		guard let pemAPNCertKeyFileLocation = self.pemAPNCertKeyFileLocation else {
-			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Must specify pemAPNCertKeyFileLocation")
+		guard certKeyPEMFileLocation != nil || certAndKeyPEMFileLocation != nil else {
+			throw SwiftAPNSError.swiftAPNSError(reason: "[\(type(of: self))] Must specify certKeyPEMFileLocation or certAndKeyPEMFileLocation")
 		}
 
 		apn_set_mode(context, mode.libraryValue) // APN_MODE_PRODUCTION
 		apn_set_behavior(context, UInt32(2)) // 1 << 1, APN_OPTION_RECONNECT
-		apn_set_certificate(context, pemAPNCertFileLocation, pemAPNCertKeyFileLocation, pemAPNCertKeyPassword)//
+		apn_set_certificate(context, certPEMFileLocation ?? certAndKeyPEMFileLocation, certKeyPEMFileLocation ?? certAndKeyPEMFileLocation, certKeyPassword)//
 //		apn_set_certificate(context, "apn-cert.pem", "apn-key.pem", nil)
 //		apn_set_log_level(context, UInt16(0));
 		apn_set_log_callback(context, {
